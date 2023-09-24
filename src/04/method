@@ -1,0 +1,6 @@
+#!/bin/bash
+
+function method {
+    method_array=(GET POST PUT PATCH DELETE)
+    echo ${method_array[$(($RANDOM % 5))]}
+}

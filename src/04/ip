@@ -1,0 +1,5 @@
+#!/bin/bash
+
+function ip {
+    echo "$(( $RANDOM % 256 )).$(( $RANDOM % 256 )).$(( $RANDOM % 256 )).$(( $RANDOM % 256 ))"
+}

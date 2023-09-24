@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# 200 OK: The request was successful.
+# 201 Created: A new resource was created.
+
+# 400 Bad Request: The request was invalid or cannot be processed due to semantic errors.
+# 401 Unauthorized: The request requires authentication or authorization.
+# 403 Forbidden: The request was valid, but the server refused access.
+# 404 Not Found: The requested resource could not be found.
+
+# 500 Internal Server Error: An unexpected condition occurred on the server.
+# 501 Not Implemented: The server does not support the functionality needed to fulfill the request.
+# 502 Bad Gateway: The server acted as a gateway and received an invalid response from another server.
+# 503 Service Unavailable: The server is currently unavailable.
+
+function code {
+    code_array=(200 201 400 401 403 404 500 501 502 503)
+    echo ${code_array[$(($RANDOM % 10))]}
+}

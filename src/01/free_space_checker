@@ -1,0 +1,14 @@
+#!/bin/bash
+
+function free_space_checker {
+
+    space=$(df -h /home/ | awk 'FNR == 2 {print $4}' | grep -o '[0-9][.][0-9]')
+    result=$(echo "$space > 1.0" | bc)
+
+    if [[ "$result" -eq 1 ]]; then 
+        echo "OK"
+    else
+        echo "FAIL"
+    fi
+
+}

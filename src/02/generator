@@ -1,0 +1,130 @@
+#!/bin/bash
+
+. ./free_space_checker
+
+function folders_generator {
+
+min_folder_name=5
+max_folder_name=248
+start_name=$folder_letters
+num_of_char=1
+number_of_folders=$((1+$RANDOM%100))
+
+# Если количество букв меньше 4, то доибваем до 4 приписыванием первого чара в начало
+first_char="${folder_letters: 0:1}"
+while [[ ${#start_name} -lt $min_folder_name ]]
+do
+    start_name="$first_char""$start_name"
+done
+
+prod_name=$start_name
+current_char=$first_char
+
+for dir in $(find / -maxdepth 100 -mindepth 1 -type d 2>/dev/null); do
+
+    for (( amount_of_folders=0; amount_of_folders<number_of_folders; ++amount_of_folders ))
+    do
+        # Когда количество символов в названии достигает максимального, откатываемся к началу и начинаем увеличивать другую букву
+        if [[ ${#prod_name} -ge max_folder_name ]]; then
+            prod_name=$start_name
+            current_char="${folder_letters: num_of_char:1}"
+            ((++num_of_char))
+        fi
+
+        if ! [[ $dir =~ ^\/.*bin\/.* ]]; then
+            first_part="${prod_name: 0:num_of_char}"
+            last_part="${prod_name: num_of_char}"
+            prod_name="$first_part""$current_char""$last_part"
+            log_name=$prod_name"_""$(date +"%d%m%y")"
+            mkdir $dir/$log_name 2>/dev/null
+            echo "Folder created: $dir/$log_name $(date +"%d.%m.%y %H:%M:%S")" >> logfile.log
+            tofilename="$dir/$log_name"
+
+            free_space=$(free_space_checker)
+            if [[ $free_space == "FAIL" ]]; then
+                return 1
+            fi
+
+            files_generator $tofilename $file_letters
+        fi
+    done
+
+done
+}
+
+
+function files_generator {
+
+    file_count=0
+    number_of_files=$((1+$RANDOM%100))
+    while [[ $file_count -lt $number_of_files ]]; do
+        free_space=$(free_space_checker)
+        if [[ $free_space == "OK" ]]; then
+
+            start_name=$file_letters
+            filename_part=$(echo $start_name | awk -F"." '{print $1}')
+            fileext_part=$(echo $start_name | awk -F"." '{print $2}')
+
+            num_of_char=1
+            num_of_char_ext=0
+
+            max_file_name=$((247-${#fileext_part}))
+
+            min_file_name=4
+
+            # Если количество букв меньше 4, то доибваем до 4 приписыванием первого чара в начало
+            first_char="${file_letters: 0:1}"
+            while [[ ${#start_name} -lt $min_file_name ]]
+            do
+                start_name="$first_char""$start_name"
+            done
+
+            filename_part=$(echo $start_name | awk -F"." '{print $1}')
+            fileext_part=$(echo $start_name | awk -F"." '{print $2}')
+
+            prod_name=$filename_part
+            current_char=$first_char
+            extent=$fileext_part
+            for (( amount_of_files=0; amount_of_files<number_of_files; ++amount_of_files ))
+            do
+                free_space=$(free_space_checker)
+                if [[ $free_space == "FAIL" ]]; then
+                    echo "Осталось меньше 1GB. Выполнение скрипта остановлено"
+                    return 1
+                fi
+
+                # Когда количество символов в названии достигает максимального, откатываемся к началу и начинаем увеличивать другую букву
+                if [[ ${#prod_name} -ge max_file_name ]]; then
+                    prod_name=$filename_part
+                    current_char="${filename_part: num_of_char:1}"
+                    ((++num_of_char))
+                fi
+
+                # При переборе всех возможных комбинаций имени файла это условие меняет его расширение и откатывает имя к изначальному
+                if [[ num_of_char -gt ${#filename_part} ]]; then
+                    num_of_char=1
+                    ((--max_file_name))
+                    prod_name=$filename_part
+                    current_char=$first_char
+                    extent="${fileext_part: num_of_char_ext:1}""$extent"
+                    if [[ ((${#extent}+${#prod_name} -gt max_file_name)) ]]; then
+                        ((++num_of_char_ext))
+                        extent=$(echo $start_name | awk -F"." '{print $2}')
+                    fi
+
+                fi
+
+                first_part="${prod_name: 0:num_of_char}"
+                last_part="${prod_name: num_of_char}"
+                prod_name="$first_part""$current_char""$last_part"
+                log_name=$prod_name"_""$(date +"%d%m%y")"".""$extent"
+                fallocate -l $filesize"M" $tofilename/$log_name 2>/dev/null
+                ((++file_count))
+                echo "File created: $tofilename/$log_name $filesize"Mb" $(date +"%d.%m.%y %H:%M:%S")" >> logfile.log
+            done
+        else
+            echo "Осталось меньше 1GB. Выполнение скрипта остановлено"
+            return 1
+        fi
+    done
+}
